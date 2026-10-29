@@ -1,0 +1,69 @@
+// Prisma schema for Auction Management
+// To switch to MySQL later: change provider to "mysql" and update DATABASE_URL in .env
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  shortName     String?
+  color         String   @default("#22c55e")
+  logoUrl       String?
+  startingPurse Int      @default(2000000)
+  squadSize     Int      @default(10)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  players Player[]
+  bids    Bid[]
+}
+
+// Player status values (string-based; SQLite does not support enums):
+// AVAILABLE | IN_AUCTION | SOLD | UNSOLD
+model Player {
+  id          String    @id @default(cuid())
+  srNo        Int?
+  name        String
+  blockNo     String?
+  flatNo      String?
+  dob         DateTime?
+  age         Int?
+  skill       String    @default("ALL-ROUNDER")
+  keyStrength String?
+  lastOecl    Boolean   @default(false)
+  isCaptain   Boolean   @default(false)
+  mobile      String?
+  photoUrl    String?
+  status      String    @default("AVAILABLE")
+
+  soldAmount Int?
+  teamId     String?
+  team       Team?   @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  bids      Bid[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Bid {
+  id        String   @id @default(cuid())
+  amount    Int
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+// Tracks which player is currently live on the auction block (single active row)
+model AuctionState {
+  id              String   @id @default("singleton")
+  currentPlayerId String?
+  updatedAt       DateTime @updatedAt
+}
